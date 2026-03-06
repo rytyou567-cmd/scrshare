@@ -393,6 +393,7 @@ class SecureScreenshare {
             peerId: 'anonymous-peer'
         });
 
+        SecureUI.log(`Peer Request for [${code}] Dispatched to signaling pool.`, 'signal');
         SecureUI.updateStatus('Peer Request Dispatched');
     }
 
@@ -470,6 +471,7 @@ class SecureScreenshare {
                 const request = this.getDiscovery(`${code}_request`);
 
                 if (invite && this.peerStatusArea && !this.peerStatusArea.classList.contains('hidden') && !this.btnPeerJoinLink.offsetParent) {
+                    SecureUI.log('Incoming HOST ACCEPTANCE detected via background poll!', 'signal');
                     this.peerStepMsg.innerText = "Host Accepted!";
                     this.btnPeerJoinLink.classList.remove('hidden');
                     detectedChange = true;
@@ -543,10 +545,14 @@ class SecureScreenshare {
             const exportedPub = await CryptoUtils.exportPublicKey(this.localKeyPair.publicKey);
 
             this.peerPublicKey = await CryptoUtils.importPublicKey(CryptoUtils.hexToBuf(data.pub));
+            SecureUI.log('E2EE Peer Public Key imported successfully.', 'info');
+
             this.derivedKey = await CryptoUtils.deriveEncryptionKey(this.localKeyPair.privateKey, this.peerPublicKey);
+            SecureUI.log('Secure Shared Secret derived (E2EE Active).', 'info');
 
             this.createPeerConnection();
             await this.pc.setRemoteDescription(new RTCSessionDescription(data.sdp));
+            SecureUI.log('Remote Session Description (Offer) applied.', 'info');
 
             const answer = await this.pc.createAnswer();
             await this.pc.setLocalDescription(answer);
@@ -602,6 +608,7 @@ class SecureScreenshare {
             this.derivedKey = await CryptoUtils.deriveEncryptionKey(this.localKeyPair.privateKey, this.peerPublicKey);
 
             await this.pc.setRemoteDescription(new RTCSessionDescription(data.sdp));
+            SecureUI.log('Remote Session Description (Response) applied. Handshake finalized.', 'info');
             this.handshakeFinalized = true;
 
             SecureUI.log('Secure Link Established!', 'info');
@@ -640,7 +647,7 @@ class SecureScreenshare {
         };
 
         this.pc.ontrack = (event) => {
-            SecureUI.log('Remote track received (Step 2 Complete)!', 'media');
+            SecureUI.log(`Remote track received: ${event.track.kind} (${event.streams.length} streams)`, 'media');
             this.remoteStreamActive = true;
             const video = document.getElementById('remote-video');
 
