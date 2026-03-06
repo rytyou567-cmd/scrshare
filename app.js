@@ -112,6 +112,9 @@ const SecureUI = {
                     } else if (!window.isSecureContext && location.hostname !== 'localhost') {
                         startBtn.innerText = '🔒 Insecure Context';
                         startBtn.classList.add('disabled');
+                    } else if (this.isMobile && !this.supportsDisplayCapture) {
+                        startBtn.innerText = '🚫 Device Unsupported';
+                        startBtn.classList.add('disabled');
                     } else {
                         startBtn.innerText = 'Pick Screen to Share';
                         startBtn.classList.remove('disabled');
@@ -245,7 +248,11 @@ class SecureScreenshare {
         SecureUI.supportsDisplayCapture = this.supportsDisplayCapture;
 
         if (!this.isSecure && location.hostname !== 'localhost') {
-            SecureUI.log('Non-secure context detected. Media APIs may be restricted.', 'warn');
+            SecureUI.log('Non-secure (HTTP) context. Browser blocks all Media APIs.', 'error');
+        } else if (this.isMobile && !this.supportsDisplayCapture) {
+            SecureUI.log('Mobile OS Restriction: This browser does not support broadcasting your screen. You can still watch other shares.', 'warn');
+        } else {
+            SecureUI.log('Environment Verified: Secure Context & Media APIs available.', 'info');
         }
     }
 
@@ -329,7 +336,8 @@ class SecureScreenshare {
                     audio: false
                 });
             } else {
-                throw new Error('Screen Sharing is not supported on this device/browser.');
+                const reason = this.isMobile ? "Mobile Browsers block screen capture for security." : "Device/Browser unsupported.";
+                throw new Error(`${reason} Please use Desktop to host, or mobile to watch.`);
             }
 
             // Sync with UI manager
