@@ -175,6 +175,10 @@ class SecureScreenshare {
         this.prepareBroadcast();
     }
 
+    toggleConsole() {
+        SecureUI.toggleConsole();
+    }
+
     cacheDom() {
         this.btnStart = document.getElementById('btn-start-share');
         this.btnDisconnect = document.getElementById('btn-disconnect');
