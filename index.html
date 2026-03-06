@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SecureShare | Ultra-Quality P2P E2EE</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+</head>
+
+<body>
+    <div id="app-container">
+        <div class="container" id="main-ui">
+            <header>
+                <div class="logo">
+                    <div class="logo-icon"></div>
+                    SECURESHARE
+                </div>
+                <button class="btn-diag-toggle" onclick="app.toggleConsole()">🛠️ Diagnostic</button>
+                <div class="status-indicator">
+                    <div id="connection-dot" class="dot"></div>
+                    <span id="connection-status">Ready for Secure Exchange</span>
+                </div>
+            </header>
+
+            <section class="hero">
+                <h1>Peer Screensharing, <br>Encrypted by Design.</h1>
+                <p>Private, encrypted screen sharing. High-quality direct P2P transmission.</p>
+            </section>
+
+            <main class="main-grid">
+                <!-- Share Section -->
+                <div class="card" id="card-broadcast">
+                    <div>
+                        <span class="badge">HOST</span>
+                        <h2>Broadcast Screen</h2>
+                        <p>Share your display securely. Your unique discovery code is below.</p>
+                    </div>
+
+                    <div class="discovery-box">
+                        <label>Your Discovery Code:</label>
+                        <div class="code-display" id="display-my-code">------</div>
+                        <button class="btn-copy" id="btn-copy-my-code">Copy Code</button>
+                    </div>
+
+                    <div class="button-group-vertical">
+                        <button class="btn btn-primary" id="btn-start-share">Pick Screen to Share</button>
+                        <button class="btn btn-go hidden" id="btn-host-activate">Enable Discovery</button>
+                        <button class="btn btn-go-live hidden" id="btn-host-go-live">Start Broadcast</button>
+                        <button class="btn btn-secondary hidden" id="btn-stop-share">Reset Session</button>
+                    </div>
+                </div>
+
+                <!-- Receive Section -->
+                <div class="card" id="card-receive">
+                    <div>
+                        <span class="badge">PEER</span>
+                        <h2>Join Session</h2>
+                        <p>Enter the 6-digit discovery code provided by the host to connect.</p>
+                    </div>
+
+                    <div class="input-group-inline">
+                        <input type="text" id="peer-code-input" placeholder="000 000" maxlength="7">
+                        <button class="btn btn-go" id="btn-go-peer">GO</button>
+                    </div>
+
+                    <div id="peer-status-area" class="hidden">
+                        <div class="status-box">
+                            <span id="peer-step-msg">Requesting connection...</span>
+                            <button class="btn btn-go hidden" id="btn-peer-join-link">2. GO (Link Handshake)</button>
+                            <button class="btn btn-go-live hidden" id="btn-final-join">3. GO (Enter Stream)</button>
+                        </div>
+                    </div>
+
+                    <p class="card-footer-note">Waiting for your input...</p>
+                </div>
+            </main>
+        </div>
+
+        <!-- Fullscreen Video View -->
+        <div id="stream-view" class="hidden">
+            <div class="loading-overlay" id="video-loader">
+                <div class="spinner"></div>
+                <p id="loader-text">Establishing Secure Stream...</p>
+            </div>
+
+            <video id="remote-video" autoplay playsinline></video>
+
+            <!-- Floating Controls -->
+            <div class="control-bar">
+                <div class="control-info">
+                    <div class="dot active"></div>
+                    <span id="stream-info">Encrypted P2P Session</span>
+                </div>
+                <div class="control-actions">
+                    <button class="btn-icon" id="btn-toggle-fullscreen" title="Toggle Fullscreen">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <path
+                                d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3" />
+                        </svg>
+                    </button>
+                    <button class="btn btn-danger" id="btn-disconnect">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <path d="M18.36 6.64a9 9 0 1 1-12.73 0" />
+                            <line x1="12" y1="2" x2="12" y2="12" />
+                        </svg>
+                        Disconnect
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Hidden Handshake Logic (E2EE continues in background) -->
+    <div id="handshake-bridge" class="hidden">
+        <textarea id="handshake-output"></textarea>
+        <textarea id="handshake-input"></textarea>
+        <button id="btn-complete-handshake"></button>
+    </div>
+
+    <div id="toast-container"></div>
+
+    <!-- Request Overlay for Host -->
+    <div id="request-overlay" class="modal hidden">
+        <div class="modal-content request-card">
+            <div class="logo-icon animate-pulse"></div>
+            <h3>Incoming Connection</h3>
+            <p>A peer is requesting to join your secure session using your discovery code.</p>
+            <div class="request-actions">
+                <button class="btn btn-secondary" id="btn-decline-request">Decline</button>
+                <button class="btn btn-primary" id="btn-accept-request">Accept & Link</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Debug Logging Overlay -->
+    <div id="debug-console" class="hidden">
+        <div class="debug-header">
+            <span>Live System Diagnostic</span>
+            <button onclick="document.getElementById('debug-console').classList.add('hidden')">×</button>
+        </div>
+        <div id="debug-log-output"></div>
+    </div>
+
+    <script type="module" src="app.js"></script>
+</body>
+
+</html>
