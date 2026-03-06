@@ -399,6 +399,9 @@ class SecureScreenshare {
 
         SecureUI.log(`Peer Request for [${code}] Dispatched to signaling pool.`, 'signal');
         SecureUI.updateStatus('Peer Request Dispatched');
+
+        SecureUI.sessionState = 'joining';
+        SecureUI.updateLayout('joining');
     }
 
     async manualLinkPeer() {
@@ -422,13 +425,17 @@ class SecureScreenshare {
 
         const runSync = async () => {
             const startTime = Date.now();
-            const hasChange = await this.backgroundSync();
+            try {
+                const hasChange = await this.backgroundSync();
 
-            // Smart polling back-off
-            if (hasChange) {
-                this.syncInterval = 1000;
-            } else {
-                this.syncInterval = Math.min(this.syncInterval + 500, this.maxSyncInterval);
+                // Smart polling back-off
+                if (hasChange) {
+                    this.syncInterval = 1000;
+                } else {
+                    this.syncInterval = Math.min(this.syncInterval + 500, this.maxSyncInterval);
+                }
+            } catch (err) {
+                SecureUI.log(`Sync iteration failed: ${err.message}`, 'error');
             }
 
             const nextTick = Math.max(0, this.syncInterval - (Date.now() - startTime));
@@ -631,9 +638,17 @@ class SecureScreenshare {
         SecureUI.updateLayout('streaming');
         SecureUI.updateStatus('Secure P2P Online', true);
     }
-
     createPeerConnection() {
         this.pc = new RTCPeerConnection(CONFIG);
+
+        this.pc.onicecandidate = (event) => {
+            if (event.candidate) {
+                SecureUI.log(`ICE Candidate generated: ${event.candidate.type} (${event.candidate.protocol})`, 'info');
+            } else {
+                SecureUI.log('ICE Gathering Complete.', 'info');
+            }
+        };
+
         this.pc.oniceconnectionstatechange = () => {
             SecureUI.log(`ICE State: ${this.pc.iceConnectionState}`, 'info');
             if (this.pc.iceConnectionState === 'connected') {
